@@ -14,7 +14,7 @@ function doPost(e) {
     var events = data.events || [data];
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     var log = sheet_(ss, "Log", ["Time", "Device", "What", "Detail", "Minutes", "Score %", "Stars", "Words", "Writing"]);
-    var daily = sheet_(ss, "Daily", ["Date", "Active minutes", "Times opened", "Lessons finished", "Writing pieces", "Pages looked up"]);
+    var daily = sheet_(ss, "Daily", ["Date", "Active minutes", "Times opened", "Lessons finished", "Writing pieces"]);
     events.forEach(function (ev) {
       var when = new Date(ev.at || new Date());
       log.appendRow([when, ev.device || "", ev.type || "", ev.detail || "", ev.minutes || "", ev.score != null ? ev.score : "", ev.stars || "", ev.words || "", ev.text || ""]);
@@ -41,8 +41,8 @@ function bumpDaily_(sh, when, ev) {
   var vals = sh.getRange(1, 1, sh.getLastRow(), 1).getDisplayValues();
   var row = -1;
   for (var i = vals.length - 1; i >= 1; i--) if (vals[i][0] === key) { row = i + 1; break; }
-  if (row < 0) { sh.appendRow([key, 0, 0, 0, 0, 0]); row = sh.getLastRow(); sh.getRange(row, 1).setNumberFormat("@").setValue(key); }
-  var col = { active: 2, open: 3, lesson: 4, writing: 5, page: 6 }[ev.type];
+  if (row < 0) { sh.appendRow([key, 0, 0, 0, 0]); row = sh.getLastRow(); sh.getRange(row, 1).setNumberFormat("@").setValue(key); }
+  var col = { active: 2, open: 3, lesson: 4, writing: 5 }[ev.type];
   if (!col) return;
   var cell = sh.getRange(row, col);
   var add = ev.type === "active" ? Number(ev.minutes || 0) : 1;

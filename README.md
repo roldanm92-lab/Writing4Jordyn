@@ -2,10 +2,10 @@
 
 A kid-friendly practice site for Grade 4 writing. It has 47 lessons and 3 chapter challenges, in the same order as her paper workbook (Getting Started → Writing a Story → Writing to Inform → Writing an Opinion).
 
-- **"What page are you on?"**: she types her workbook page number and the app opens practice for that skill.
+- **Lesson notes during practice**: the "Learn it" notes stay at the top of every question (tap to hide). In chapter challenges she can open notes from any lesson in that chapter.
 - **Activities**: quizzes, sorting games, put-in-order, and writing prompts with a word meter and self-check list. She earns stars and builds a daily streak. A 🔊 button reads text aloud.
 - **My workbook (optional)**: a grown-up loads the PDF once on her device, and the real workbook page then shows next to the practice. The PDF is saved only in that browser and is never uploaded here (`*.pdf` is git-ignored).
-- **🔒 Grown-ups dashboard** (bottom of the page, default PIN **1234**, change it inside): minutes per day, sessions, streak, lessons and scores, everything she wrote, and the pages she looked up.
+- **🔒 Grown-ups dashboard** (bottom of the page, default PIN **1234**, change it inside): minutes per day, sessions, streak, lessons and scores, and everything she wrote.
 
 ## 1. Turn on the website (one time)
 1. On GitHub, open this repo → **Settings** → **Pages**.
@@ -23,7 +23,7 @@ Without this step, usage is still tracked, but only on her device (open 🔒 Gro
 4. Copy the **Web app URL** and paste it into `config.js` as `syncUrl: "https://script.google.com/macros/s/…/exec"`. Commit the change.
 5. On the Grown-ups page, tap **Send a test row**. A row should appear in your sheet.
 
-The sheet gets a **Log** tab (every open, active minute, finished lesson with score, writing piece with its full text, and page lookup) and a **Daily** tab (minutes, opens, lessons, writings per day).
+The sheet gets a **Log** tab (every open, active minute, finished lesson with score, and writing piece with its full text) and a **Daily** tab (minutes, opens, lessons, writings per day).
 
 > Note: on a public repo, anyone who reads `config.js` could see the Apps Script URL and add junk rows to your sheet. They could not read it. Making the repo private avoids this. GitHub Pages from a private repo needs a GitHub Pro plan.
 

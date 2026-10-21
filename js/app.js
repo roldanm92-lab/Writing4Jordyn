@@ -9,11 +9,6 @@
   C.sections.forEach(function (s) { s.lessons.forEach(function (l) { l.section = s; ALL.push(l); }); });
   ALL.forEach(function (l, i) { l.endPage = i + 1 < ALL.length ? ALL[i + 1].page - 1 : 129; });
   function byId(id) { return ALL.filter(function (l) { return l.id === id; })[0]; }
-  function lessonForPage(p) {
-    if (p < ALL[0].page) return ALL[0];
-    for (var i = ALL.length - 1; i >= 0; i--) if (p >= ALL[i].page) return ALL[i];
-    return ALL[0];
-  }
 
   // ---------- utils ----------
   function h(html) { var t = document.createElement("template"); t.innerHTML = html.trim(); return t.content.firstChild; }
@@ -145,10 +140,6 @@
     var hello = h('<section class="hero"><div><h1>Hi, ' + esc(name) + '! <span class="wave">👋</span></h1><p>Ready to become an even better writer?</p></div></section>');
     el.appendChild(hello);
 
-    var finder = h('<form class="card finder" autocomplete="off"><label for="pg"><b>📖 What page are you on in your workbook?</b></label><div class="finder-row"><input id="pg" type="number" inputmode="numeric" min="1" max="148" placeholder="Page #" required><button class="btn" type="submit">Let\'s go!</button></div><p class="muted small">I\'ll find that lesson and give you new practice on the same skill.</p></form>');
-    finder.onsubmit = function (e) { e.preventDefault(); var p = parseInt(finder.querySelector("input").value, 10); if (p > 0) location.hash = "#/page/" + p; };
-    el.appendChild(finder);
-
     var nuCard = h('<a class="card next-up" href="#/l/' + nu.id + '" style="--c:' + nu.section.color + '"><span class="big-emoji">' + nu.emoji + '</span><div><div class="eyebrow">Up next · ' + esc(nu.section.title) + " · " + pagesLabel(nu) + '</div><div class="title">' + esc(nu.title) + '</div></div><span class="go">▶</span></a>');
     el.appendChild(nuCard);
 
@@ -163,25 +154,6 @@
       });
       el.appendChild(sec);
     });
-    return el;
-  }
-
-  function viewPage(p) {
-    var el = h('<div></div>');
-    if (p >= 138) {
-      el.appendChild(h('<div class="card center"><div class="big-emoji">🔑</div><h2>Page ' + p + ' is the answer key</h2><p>Nice try! 😄 Answer keys are for grown-ups. Pick the page you\'re working on instead.</p><a class="btn" href="#/">Back home</a></div>'));
-      return el;
-    }
-    if (p >= 130) {
-      Tracker.pageLookup(p, "Writer's Handbook");
-      el.appendChild(h('<div class="card center"><div class="big-emoji">📒</div><h2>Page ' + p + " is in the Writer's Handbook</h2><p>Here's our own handbook with tips you can use any time.</p><a class=\"btn\" href=\"#/handbook\">Open the Handbook</a></div>"));
-      el.appendChild(workbookPanel(p, 130, 137));
-      return el;
-    }
-    var l = lessonForPage(p);
-    Tracker.pageLookup(p, l.title);
-    el.appendChild(h('<div class="card found" style="--c:' + l.section.color + '"><div class="eyebrow">Workbook page ' + p + " is part of…</div><div class=\"found-row\"><span class=\"big-emoji\">" + l.emoji + '</span><div><h2>' + esc(l.title) + '</h2><p class="muted">' + esc(l.section.title) + " · " + pagesLabel(l) + '</p></div></div><a class="btn big" href="#/l/' + l.id + '">Practice this skill ▶</a></div>'));
-    el.appendChild(workbookPanel(p, l.page, l.endPage));
     return el;
   }
 
@@ -211,11 +183,34 @@
   function runLesson(l) {
     var i = 0, scores = [];
     var acts = l.activities;
+    var isTest = /test$/.test(l.id);
+    var notesOpen = !isTest;
+    function notesPanel() {
+      var d = h('<details class="card notes"' + (notesOpen ? " open" : "") + '><summary><b>💡 ' + (isTest ? "Need a reminder?" : "Lesson notes") + '</b> <span class="muted small">(tap to ' + (notesOpen ? "hide" : "show") + ')</span></summary><div class="notes-body"></div></details>');
+      var body = d.querySelector(".notes-body");
+      if (isTest) {
+        // For a chapter challenge, gather the notes from every lesson in that chapter.
+        l.section.lessons.filter(function (x) { return x !== l; }).forEach(function (x) {
+          var sub = h('<details class="sub"><summary>' + x.emoji + " " + esc(x.title) + "</summary></details>");
+          x.learn.forEach(function (p) { sub.appendChild(h("<p>" + p + "</p>")); });
+          body.appendChild(sub);
+        });
+      } else {
+        var sp = speakBtn(l.learn.join(" ")); sp.classList.add("notes-speak"); body.appendChild(sp);
+        l.learn.forEach(function (p) { body.appendChild(h("<p>" + p + "</p>")); });
+      }
+      d.addEventListener("toggle", function () {
+        notesOpen = d.open;
+        d.querySelector("summary .muted").textContent = "(tap to " + (d.open ? "hide" : "show") + ")";
+      });
+      return d;
+    }
     function step() {
       app.innerHTML = "";
       var wrap = h('<div class="lesson" style="--c:' + l.section.color + '"></div>');
       var top = h('<div class="run-top"><a class="back" href="#/l/' + l.id + '">✕</a><div class="bar thick"><i style="width:' + (100 * i / acts.length) + '%"></i></div><span class="muted small">' + (i + 1) + "/" + acts.length + "</span></div>");
       wrap.appendChild(top);
+      wrap.appendChild(notesPanel());
       var a = acts[i];
       var card = h('<div class="card activity"></div>');
       wrap.appendChild(card);
@@ -466,10 +461,6 @@
     });
     el.appendChild(wc);
 
-    // Page lookups
-    var pg = db.pages.slice(-10).reverse();
-    el.appendChild(h('<div class="card"><h3>Workbook pages she looked up</h3>' + (pg.length ? "<ul>" + pg.map(function (x) { return "<li>Page " + x.page + " → " + esc(x.title) + ' <span class="muted small">(' + fmtDate(x.at) + ")</span></li>"; }).join("") + "</ul>" : '<p class="muted">None yet.</p>') + "</div>"));
-
     // Settings
     var st = h('<div class="card settings"><h3>Settings</h3>' +
       '<div class="set"><b>Cloud usage log</b><p class="muted small">' + (CFG.syncUrl ? "✅ On. Usage is also being sent to your Google Sheet." : "Off. Usage is saved on this device only. See README.md on GitHub to turn on the Google Sheet log so you can check from your own phone.") + "</p>" + (CFG.syncUrl ? '<button class="btn small ghost" data-a="test">Send a test row</button>' : "") + "</div>" +
@@ -506,7 +497,6 @@
     var parts = hsh.split("/");
     var v;
     if (parts[0] === "l") v = viewLesson(parts[1]);
-    else if (parts[0] === "page") v = viewPage(parseInt(parts[1], 10) || 1);
     else if (parts[0] === "handbook") v = viewHandbook();
     else if (parts[0] === "parent") v = viewParent();
     else v = viewHome();
